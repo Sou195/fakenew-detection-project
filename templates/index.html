@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Fake News Detection</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>📰 Fake News Detection</h1>
+    <p>Type/paste any news headline or paragraph and click Check — the app predicts REAL or FAKE instantly.</p>
+
+    <textarea id="newsInput" placeholder="Enter news text here..." rows="6"></textarea>
+    <div class="controls">
+      <button id="checkBtn">Check News</button>
+      <button id="clearBtn">Clear</button>
+    </div>
+
+    <div id="resultBox" class="result-hidden"></div>
+  </div>
+
+  <script>
+    const checkBtn = document.getElementById('checkBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const input = document.getElementById('newsInput');
+    const resultBox = document.getElementById('resultBox');
+
+    checkBtn.addEventListener('click', async () => {
+      const text = input.value.trim();
+      if (!text) {
+        resultBox.className = '';
+        resultBox.innerHTML = '<div class="warn">⚠️ Please enter some text.</div>';
+        return;
+      }
+      resultBox.className = '';
+      resultBox.innerHTML = '<div class="loading">⏳ Checking...</div>';
+
+      try {
+        const payload = new URLSearchParams();
+        payload.append('text', text);
+        const res = await fetch('/predict', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: payload.toString()
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (data.result === 'REAL') {
+            resultBox.innerHTML = '<div class="real">✅ REAL</div>';
+          } else {
+            resultBox.innerHTML = '<div class="fake">❌ FAKE</div>';
+          }
+        } else {
+          resultBox.innerHTML = '<div class="warn">⚠️ ' + (data.message || 'Error') + '</div>';
+        }
+      } catch (err) {
+        resultBox.innerHTML = '<div class="warn">⚠️ Request failed. See console for details.</div>';
+        console.error(err);
+      }
+    });
+
+    clearBtn.addEventListener('click', () => {
+      input.value = '';
+      resultBox.className = 'result-hidden';
+      resultBox.innerHTML = '';
+    });
+  </script>
+</body>
+</html>
